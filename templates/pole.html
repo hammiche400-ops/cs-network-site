@@ -3,19 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pôle — CS Network</title>
+<title>{{title}}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="{{base}}styles.css">
+{{head}}
 </head>
 <body data-page="pole">
 <header class="site-header"><div class="container">
-  <a class="brand" href="index.html" aria-label="Accueil CS Network"><img src="assets/cs-network-logo.jpg" alt="CS Network"></a>
+  <a class="brand" href="{{home}}" aria-label="Accueil CS Network"><img src="{{base}}assets/cs-network-logo.jpg" alt="CS Network"></a>
   <nav class="nav" id="nav" aria-label="Campus"></nav>
 </div></header>
 <main class="container">
-  <a class="back" id="back" href="campus.html"></a>
+  <a class="back" id="back" href="{{home}}"></a>
   <div class="pole-layout">
     <div class="pole-main">
       <div class="pole-title">
@@ -38,7 +39,5 @@
   </div>
 </main>
 <footer class="site-footer"><div class="container"><span>CS Network · Association étudiante de CentraleSupélec</span><span>Adossée à CentraleSupélec Alumni</span></div></footer>
-<script src="data.js"></script>
-<script src="app.js"></script>
 </body>
 </html>

@@ -1,0 +1,14 @@
+{
+  "name": "cs-network-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Site de CS Network — généré à partir de data.js, sans aucune dépendance.",
+  "type": "module",
+  "scripts": {
+    "build": "node build/build.mjs",
+    "qr": "node build/qrcodes.mjs",
+    "serve": "node build/serve.mjs",
+    "start": "npm run build && npm run serve"
+  },
+  "engines": { "node": ">=18" }
+}

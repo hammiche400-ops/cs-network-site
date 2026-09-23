@@ -1,0 +1,22 @@
+QR codes CS Network — régénérés avec « npm run qr »
+URL de base : https://hammiche400-ops.github.io/cs-network-site/
+
+rennes.png / .svg
+  Campus de Rennes
+  https://hammiche400-ops.github.io/cs-network-site/rennes/
+
+rennes-conferences.png / .svg
+  Rennes · Conférences
+  https://hammiche400-ops.github.io/cs-network-site/rennes/conferences/
+
+rennes-podcast.png / .svg
+  Rennes · Podcast
+  https://hammiche400-ops.github.io/cs-network-site/rennes/podcast/
+
+rennes-stages.png / .svg
+  Rennes · Stages centraliens
+  https://hammiche400-ops.github.io/cs-network-site/rennes/stages/
+
+rennes-associations.png / .svg
+  Rennes · Aide aux associations
+  https://hammiche400-ops.github.io/cs-network-site/rennes/associations/

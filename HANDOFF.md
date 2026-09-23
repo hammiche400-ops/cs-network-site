@@ -1,7 +1,12 @@
 # CS Network — Passation développeur
 
-Site mobile-first en 3 gabarits : Accueil, Campus, Pôle. Un gabarit sert pour tous les campus et pôles. Le contenu est dans `data.js`.
-URL : `index.html` · `campus.html?c=rennes` · `pole.html?c=rennes&p=conferences` (QR code → URL pôle)
+Site mobile-first en 4 gabarits : Accueil, Campus, Pôle, 404. Un gabarit sert pour tous les campus et pôles. Le contenu est dans `data.js`.
+
+Le site est **statique, généré à la compilation** : `node build/build.mjs` lit `data.js` et écrit une page HTML par campus et par pôle publié dans `dist/`. Aucun JavaScript n'est exécuté côté client, aucune dépendance npm.
+
+URL : `/` · `/rennes/` · `/rennes/conferences/` (QR code → URL pôle). Une adresse inconnue, ou un campus non publié, tombe sur `404.html`.
+
+Le balisage produit est **identique** à celui que rendait l'ancien `app.js` ; `styles.css` n'a pas été modifié. Seul ajout de style, dans la page d'accueil générée uniquement : une règle qui neutralise le survol des cartes « Bientôt » (campus non publiés), qui ne sont pas cliquables.
 
 ---
 
@@ -74,7 +79,7 @@ Texte blanc sur bordeaux et sur violet : contraste > 7:1.
 ## 2. Composants
 
 ### Header
-Fond blanc, sticky, filet bas 2px bordeaux. Logo à gauche (48px de haut, `mix-blend-mode: multiply`, cliquable vers l'accueil). Liens des 3 campus à droite (15px, zone de 44px). Campus actif : soulignement 2px bordeaux. Survol : texte bordeaux.
+Fond blanc, sticky, filet bas 2px bordeaux. Logo à gauche (48px de haut, `mix-blend-mode: multiply`, cliquable vers l'accueil). Liens des campus **publiés** à droite (15px, zone de 44px). Campus actif : soulignement 2px bordeaux. Survol : texte bordeaux.
 
 ### Carte campus (`.card-campus`)
 - Structure : lien entier. Numéro « 01 » (14px/600 violet) → nom (32px Newsreader) → lieu (15px muted) → pied séparé par un filet 1px #E4E1E7 : « N pôles » + flèche bordeaux
@@ -82,6 +87,7 @@ Fond blanc, sticky, filet bas 2px bordeaux. Logo à gauche (48px de haut, `mix-b
 - Survol : toute la bordure passe en #8E1836 (transition 150ms)
 - Clic : fond #F7F4F8
 - Focus : contour 2px bordeaux
+- Campus non publié (`.card-campus--soon`) : même carte, rendue en `<span>` et non en `<a>`. Le pied affiche « Bientôt » en `.small` (14px muted), sans flèche. Ni survol ni focus : elle n'est pas cliquable.
 
 ### Carte pôle (`.card-pole`)
 - Structure : lien entier. Nom (26px Newsreader) + flèche à droite → accroche d'une ligne (16px) → filet 1px → « Responsable(s) : … » (14px violet)
@@ -134,12 +140,21 @@ Mobile-first : sur la page pôle, les boutons Email et LinkedIn sont visibles sa
 
 ## 4. Fichiers
 
-- `index.html` — Accueil
-- `campus.html` — Gabarit campus (`?c=rennes|metz|gif`)
-- `pole.html` — Gabarit pôle (`?c=…&p=…`)
-- `styles.css` — Tous les tokens (`:root`) et composants
-- `data.js` — Contenu : campus, pôles, responsables, emails, LinkedIn, photos
-- `app.js` — Rendu des gabarits à partir de `data.js`, en JS vanilla
+- `data.js` — Contenu : campus (dont `published`), pôles, responsables, emails, LinkedIn, photos. Seule source de contenu.
+- `site.config.json` — URL publique du site, surchargeable par la variable d'environnement `BASE_URL`
+- `styles.css` — Tous les tokens (`:root`) et composants. **Figé.**
 - `assets/cs-network-logo.jpg` — Logo
+- `templates/index.html · campus.html · pole.html · 404.html` — Gabarits. Remplacements : `{{title}}`, `{{head}}`, `{{base}}` (préfixe des ressources), `{{home}}` (lien accueil) ; le contenu est injecté dans les éléments repérés par leur `id`.
+- `build/build.mjs` — Génère `dist/` · `render.mjs` — Fragments HTML · `data.mjs` — Chargement et validation de `data.js` · `qr.mjs` — Encodeur QR (ISO/IEC 18004, niveau H, versions 1–20) · `qrcodes.mjs` — Génère `qrcodes/` · `serve.mjs` — Serveur de prévisualisation
+- `qrcodes/` — PNG 1000 px + SVG par page publiée, versionnés
+- `.github/workflows/deploy.yml` — Build et publication sur GitHub Pages à chaque push sur `main`
+
+### Chemins
+
+Les pages utilisent des liens **relatifs à leur profondeur** (`../../styles.css` depuis une page pôle) : le site fonctionne sous n'importe quel sous-chemin sans reconfiguration. Seule exception, `404.html`, servie depuis une profondeur d'URL quelconque : ses chemins sont **absolus**, préfixés par le chemin de `baseUrl`. Les URL absolues (`canonical`, `og:url`, QR codes) sont construites depuis `baseUrl` ; en CI, celle-ci est remplacée par l'URL réelle fournie par `actions/configure-pages`.
+
+### Commandes
+
+`npm run build` · `npm run qr` · `npm start` (build + prévisualisation locale)
 
 À compléter dans `data.js` : les noms de famille (`[Nom]`), les emails réels, les URL LinkedIn, et le chemin des photos (`photo: 'assets/maxime.jpg'`).
