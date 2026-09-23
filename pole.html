@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pôle — CS Network</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="pole">
+<header class="site-header"><div class="container">
+  <a class="brand" href="index.html" aria-label="Accueil CS Network"><img src="assets/cs-network-logo.jpg" alt="CS Network"></a>
+  <nav class="nav" id="nav" aria-label="Campus"></nav>
+</div></header>
+<main class="container">
+  <a class="back" id="back" href="campus.html"></a>
+  <div class="pole-layout">
+    <div class="pole-main">
+      <div class="pole-title">
+        <div class="eyebrow" id="eyebrow"></div>
+        <h1 class="h1 h1--pole" id="title"></h1>
+      </div>
+      <div class="contact">
+        <a class="btn btn--email" id="btn-email" href="#">Email
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="4" width="20" height="16"/><path d="m22 7-10 6L2 7"/></svg></a>
+        <a class="btn btn--linkedin" id="btn-linkedin" href="#" target="_blank" rel="noopener">LinkedIn
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg></a>
+      </div>
+      <div class="contact-note" id="contact-note"></div>
+      <div class="ruled"><h2 class="h2 h2--sm">Le pôle</h2><p class="body-lg" id="desc"></p></div>
+    </div>
+    <div class="leads">
+      <h2 class="h2 h2--sm ruled" id="lead-title"></h2>
+      <div class="leads" id="lead-list"></div>
+    </div>
+  </div>
+</main>
+<footer class="site-footer"><div class="container"><span>CS Network · Association étudiante de CentraleSupélec</span><span>Adossée à CentraleSupélec Alumni</span></div></footer>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
