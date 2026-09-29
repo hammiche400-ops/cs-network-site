@@ -38,9 +38,11 @@ export function renderCampusCards(campuses, link) {
       <span class="card-campus card-campus--soon">${head}
         <span class="card-campus__foot"><span class="small">Bientôt</span></span>
       </span>`;
+    // Un campus sans pôle annonce la taille de son équipe.
+    const count = c.poles.length ? `${c.poles.length} pôles` : `${c.team.length} membres`;
     return `
       <a class="card-campus" href="${link.campus(c.id)}">${head}
-        <span class="card-campus__foot"><span>${c.poles.length} pôles</span>${ARROW}</span>
+        <span class="card-campus__foot"><span>${count}</span>${ARROW}</span>
       </a>`;
   }).join('');
 }
@@ -78,3 +80,41 @@ export const contactNote = pole =>
  * cartes « Bientôt », qui ne sont pas cliquables. styles.css n'est pas modifié.
  */
 export const SOON_STYLE = '<style>.card-campus--soon{cursor:default}.card-campus--soon:hover{border-color:var(--border)}</style>';
+
+/* ---------- Campus présentant une équipe plutôt que des pôles ---------- */
+
+const MAIL_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="4" width="20" height="16"/><path d="m22 7-10 6L2 7"/></svg>';
+const LINKEDIN_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>';
+
+/** Membres du bureau (`bureau: true`) et autres membres, dans l'ordre de data.js. */
+export const splitTeam = campus => ({
+  bureau: campus.team.filter(m => m.bureau),
+  membres: campus.team.filter(m => !m.bureau),
+});
+
+/** Cartes de l'équipe : carte responsable existante + deux liens de contact. */
+export function renderTeamCards(members) {
+  return members.map(m => `
+      <div class="card-lead">
+        ${m.photo ? `<img class="card-lead__photo" src="${esc(m.photo)}" alt="${esc(m.name)}">` : `<div class="card-lead__photo" aria-hidden="true">${esc(m.name[0])}</div>`}
+        <div class="card-lead__info">
+          <div class="card-lead__name">${esc(m.name)}</div>
+          <div class="card-lead__role">${esc(m.role)}</div>
+          <div class="contact">
+            <a class="btn btn--email btn--sm" href="mailto:${esc(m.email)}" aria-label="Écrire à ${esc(m.name)}">Email${MAIL_ICON}</a>
+            <a class="btn btn--linkedin btn--sm" href="${esc(m.linkedin)}" target="_blank" rel="noopener" aria-label="LinkedIn de ${esc(m.name)}">LinkedIn${LINKEDIN_ICON}</a>
+          </div>
+        </div>
+      </div>`).join('');
+}
+
+/** Compte en français : « 4 personnes », « 1 personne ». */
+export const people = n => `${n} personne${n > 1 ? 's' : ''}`;
+
+/**
+ * Deuxième et dernier ajout de style du build, sur les pages d'équipe uniquement :
+ * une variante compacte des boutons de contact existants. Aucune couleur ni
+ * police nouvelle — tout vient de .btn--email et .btn--linkedin dans styles.css.
+ * La zone cliquable reste à 44px de haut.
+ */
+export const TEAM_STYLE = '<style>.btn--sm{min-height:44px;padding:0 10px;font-size:14px;gap:6px;justify-content:center}</style>';

@@ -115,18 +115,31 @@ export function build() {
 
   /* Une page par campus publié, une page par pôle */
   for (const c of published) {
-    written.push(write(`${c.id}/index.html`, page(template('campus'), {
+    // Un campus sans pôle présente son équipe à la place : autre gabarit, même chrome.
+    const asTeam = c.poles.length === 0;
+    const heading = html => {
+      html = text(html, 'eyebrow', `Campus · ${c.place}`);
+      html = text(html, 'title', c.name);
+      return text(html, 'intro', c.intro);
+    };
+    written.push(write(`${c.id}/index.html`, page(template(asTeam ? 'campus-equipe' : 'campus'), {
       prefix: '../',
       currentId: c.id,
       title: `${c.name} — CS Network`,
       description: c.intro,
       canonical: abs(R.paths.campus(c.id)),
+      extra: asTeam ? R.TEAM_STYLE : '',
       fillBody: (html, link) => {
-        html = text(html, 'eyebrow', `Campus · ${c.place}`);
-        html = text(html, 'title', c.name);
-        html = text(html, 'intro', c.intro);
-        html = text(html, 'count', `${c.poles.length} pôles`);
-        return fill(html, 'pole-list', R.renderPoleCards(c, link));
+        html = heading(html);
+        if (!asTeam) {
+          html = text(html, 'count', `${c.poles.length} pôles`);
+          return fill(html, 'pole-list', R.renderPoleCards(c, link));
+        }
+        const { bureau, membres } = R.splitTeam(c);
+        html = text(html, 'count-bureau', R.people(bureau.length));
+        html = fill(html, 'bureau-list', R.renderTeamCards(bureau));
+        html = text(html, 'count-membres', R.people(membres.length));
+        return fill(html, 'membres-list', R.renderTeamCards(membres));
       },
     })));
 

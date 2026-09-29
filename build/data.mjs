@@ -66,8 +66,21 @@ export function loadData(file) {
       };
     });
 
-    if (c.published && poles.length === 0)
-      throw new DataError(`${where} est publié mais n'a aucun pôle. Ajoutez un pôle ou passez « published » à false.`);
+    // Un campus sans pôle peut présenter son équipe à la place.
+    const team = (c.team || []).map((m, i) => {
+      const mw = `${where}, membre n° ${i + 1}`;
+      return {
+        name: need(m, 'name', mw),
+        role: need(m, 'role', mw),
+        email: need(m, 'email', mw),
+        linkedin: need(m, 'linkedin', mw),
+        bureau: m.bureau === true,
+        photo: m.photo || '',
+      };
+    });
+
+    if (c.published && poles.length === 0 && team.length === 0)
+      throw new DataError(`${where} est publié mais n'a ni pôle ni équipe. Ajoutez un pôle, ajoutez une équipe (« team »), ou passez « published » à false.`);
 
     return {
       id,
@@ -76,6 +89,7 @@ export function loadData(file) {
       intro: need(c, 'intro', where),
       published: c.published,
       poles,
+      team,
     };
   });
 
