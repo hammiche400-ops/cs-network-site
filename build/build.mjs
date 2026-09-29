@@ -75,7 +75,7 @@ function write(relPath, html) {
 
 export function build() {
   const base = resolveBaseUrl();
-  const { campuses, published } = loadData(p('data.js'));
+  const { campuses, published, hackathon, unusedPeople } = loadData(p('data.js'));
   const abs = path => base.origin + base.path + path;
   const logo = abs('assets/cs-network-logo.jpg');
   const written = [];
@@ -98,8 +98,11 @@ export function build() {
     title: 'CS Network — CentraleSupélec',
     description: homeLead,
     canonical: abs(''),
-    extra: campuses.some(c => !c.published) ? R.SOON_STYLE : '',
-    fillBody: (html, link) => fill(html, 'campus-list', R.renderCampusCards(campuses, link)),
+    extra: R.styleBlock('soon', 'staticCard', hackathon?.contacts.length ? 'smallBtn' : null),
+    fillBody: (html, link) => {
+      html = fill(html, 'campus-list', R.renderCampusCards(campuses, link));
+      return fill(html, 'hackathon', R.renderHackathon(hackathon));
+    },
   })));
 
   /* Page 404 : servie depuis n'importe quelle profondeur d'URL → chemins absolus. */
@@ -109,37 +112,24 @@ export function build() {
     description: 'Cette adresse ne correspond à aucune page du site CS Network.',
     canonical: abs(''),
     noindex: true,
-    extra: campuses.some(c => !c.published) ? R.SOON_STYLE : '',
+    extra: R.styleBlock('soon'),
     fillBody: (html, link) => fill(html, 'campus-list', R.renderCampusCards(campuses, link)),
   })));
 
   /* Une page par campus publié, une page par pôle */
   for (const c of published) {
-    // Un campus sans pôle présente son équipe à la place : autre gabarit, même chrome.
-    const asTeam = c.poles.length === 0;
-    const heading = html => {
-      html = text(html, 'eyebrow', `Campus · ${c.place}`);
-      html = text(html, 'title', c.name);
-      return text(html, 'intro', c.intro);
-    };
-    written.push(write(`${c.id}/index.html`, page(template(asTeam ? 'campus-equipe' : 'campus'), {
+    written.push(write(`${c.id}/index.html`, page(template('campus'), {
       prefix: '../',
       currentId: c.id,
       title: `${c.name} — CS Network`,
       description: c.intro,
       canonical: abs(R.paths.campus(c.id)),
-      extra: asTeam ? R.TEAM_STYLE : '',
+      extra: R.styleBlock('smallBtn'),
       fillBody: (html, link) => {
-        html = heading(html);
-        if (!asTeam) {
-          html = text(html, 'count', `${c.poles.length} pôles`);
-          return fill(html, 'pole-list', R.renderPoleCards(c, link));
-        }
-        const { bureau, membres } = R.splitTeam(c);
-        html = text(html, 'count-bureau', R.people(bureau.length));
-        html = fill(html, 'bureau-list', R.renderTeamCards(bureau));
-        html = text(html, 'count-membres', R.people(membres.length));
-        return fill(html, 'membres-list', R.renderTeamCards(membres));
+        html = text(html, 'eyebrow', `Campus · ${c.place}`);
+        html = text(html, 'title', c.name);
+        html = text(html, 'intro', c.intro);
+        return fill(html, 'sections', R.renderCampusSections(c, link));
       },
     })));
 
@@ -150,13 +140,15 @@ export function build() {
         title: `${pole.name} · ${c.name} — CS Network`,
         description: pole.tagline,
         canonical: abs(R.paths.pole(c.id, pole.id)),
+        extra: R.styleBlock('smallBtn'),
         fillBody: (html, link) => {
+          const first = pole.leads[0]; // les boutons du haut visent le premier responsable
           html = attr(html, 'back', 'href', link.campus(c.id));
           html = fill(html, 'back', `${R.BACK}Pôles de ${R.esc(c.name)}`);
           html = text(html, 'eyebrow', `Pôle · Campus de ${c.name}`);
           html = text(html, 'title', pole.name);
-          html = attr(html, 'btn-email', 'href', `mailto:${pole.email}`);
-          html = attr(html, 'btn-linkedin', 'href', pole.linkedin);
+          html = attr(html, 'btn-email', 'href', `mailto:${first.email}`);
+          html = attr(html, 'btn-linkedin', 'href', first.linkedin);
           html = text(html, 'contact-note', R.contactNote(pole));
           html = text(html, 'desc', pole.desc);
           html = text(html, 'lead-title', pole.leads.length > 1 ? 'Responsables' : 'Responsable');
@@ -171,7 +163,7 @@ export function build() {
   cpSync(p('assets'), join(DIST, 'assets'), { recursive: true });
   writeFileSync(join(DIST, '.nojekyll'), '');
 
-  return { base, written, campuses, published };
+  return { base, written, campuses, published, unusedPeople };
 }
 
 /* ---------- Exécution ---------- */
@@ -179,11 +171,12 @@ export function build() {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try {
     rmSync(DIST, { recursive: true, force: true });
-    const { base, written, campuses, published } = build();
+    const { base, written, campuses, published, unusedPeople } = build();
     const soon = campuses.filter(c => !c.published).map(c => c.name);
     console.log(`URL de base : ${base.href}`);
     console.log(`Campus publiés : ${published.map(c => c.name).join(', ')}`);
     if (soon.length) console.log(`Campus non publiés (« Bientôt », aucune page générée) : ${soon.join(', ')}`);
+    if (unusedPeople.length) console.log(`Personnes définies dans « people » mais référencées nulle part : ${unusedPeople.join(', ')}`);
     console.log(`${written.length} pages écrites dans dist/ :`);
     for (const f of written) console.log(`  dist/${f}`);
   } catch (e) {

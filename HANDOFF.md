@@ -6,7 +6,15 @@ Le site est **statique, généré à la compilation** : `node build/build.mjs` l
 
 URL : `/` · `/rennes/` · `/rennes/conferences/` (QR code → URL pôle). Une adresse inconnue, ou un campus non publié, tombe sur `404.html`.
 
-Le balisage produit est **identique** à celui que rendait l'ancien `app.js` ; `styles.css` n'a pas été modifié. Seul ajout de style, dans la page d'accueil générée uniquement : une règle qui neutralise le survol des cartes « Bientôt » (campus non publiés), qui ne sont pas cliquables.
+`styles.css` n'a pas été modifié. Le build injecte, dans les pages qui en ont besoin et uniquement là, trois règles qui n'introduisent ni couleur ni police nouvelle (voir `STYLES` dans `build/render.mjs`) :
+
+| Règle | Rôle |
+|---|---|
+| `.card-campus--soon` | neutralise le survol des cartes campus « Bientôt », non cliquables |
+| `.card-pole--static` | idem pour les cartes de faits de la section Hackathon |
+| `.btn--sm` | variante compacte des boutons de contact, 44px de haut |
+
+Ce sont les trois seules classes du site absentes de `styles.css`.
 
 ---
 
@@ -88,6 +96,7 @@ Fond blanc, sticky, filet bas 2px bordeaux. Logo à gauche (48px de haut, `mix-b
 - Clic : fond #F7F4F8
 - Focus : contour 2px bordeaux
 - Campus non publié (`.card-campus--soon`) : même carte, rendue en `<span>` et non en `<a>`. Le pied affiche « Bientôt » en `.small` (14px muted), sans flèche. Ni survol ni focus : elle n'est pas cliquable.
+- Campus publié sans pôle : le pied affiche « N membres » au lieu de « N pôles ».
 
 ### Carte pôle (`.card-pole`)
 - Structure : lien entier. Nom (26px Newsreader) + flèche à droite → accroche d'une ligne (16px) → filet 1px → « Responsable(s) : … » (14px violet)
@@ -97,8 +106,9 @@ Fond blanc, sticky, filet bas 2px bordeaux. Logo à gauche (48px de haut, `mix-b
 ### Carte responsable (`.card-lead`)
 - Structure : photo carrée 88×88 (object-fit: cover ; sinon initiale sur fond #E9E6EF) + nom (24px Newsreader), rôle (15px, « Responsable du pôle X » ou « Co-responsable du pôle X » s'il y en a deux), méta « CentraleSupélec · Campus » (14px violet)
 - Style : fond blanc, bordure 1px, padding 16px, espace de 16px entre la photo et le texte
-- Non cliquable : pas d'état de survol
 - Deux responsables : les cartes s'empilent avec 12px d'espace, titre au pluriel « Responsables »
+- Chaque carte porte deux liens de contact : `.btn--email` et `.btn--linkedin` existants, en variante compacte `.btn--sm` (44px de haut, 14px, icône 16px, texte centré), dans la grille `.contact` existante. Aucune couleur ni police nouvelle.
+- Sur les pages campus, les cartes sont posées dans une grille `.grid--pole` et la ligne `.card-lead__meta` est omise ; sur les pages pôle elle est conservée.
 
 ### Boutons de contact (`.btn--email`, `.btn--linkedin`)
 - Grille de 2 colonnes égales, 8px d'espace, placée **juste sous le titre du pôle**
@@ -109,6 +119,12 @@ Fond blanc, sticky, filet bas 2px bordeaux. Logo à gauche (48px de haut, `mix-b
 
 ### Lien retour (`.back`)
 Flèche 16px + texte 15px violet, zone de 44px, survol bordeaux. « Tous les campus » ou « Pôles de [Campus] ».
+
+### Sections de la page campus
+Assemblées par le build, dans cet ordre, chacune omise si elle est vide — sans laisser d'espace : « Les pôles » (cartes pôle), « Le bureau » (`bureau: true`), « Les responsables de pôle » (déduite des pôles publiés, pas saisie), « Les membres ». Chaque section = une `.section-bar` + une `.grid--pole`.
+
+### Section Hackathon (accueil)
+Après les cartes campus. `.section-bar` (titre + date), puis une `.grid--pole` de cartes `.card-pole .card-pole--static` non cliquables (valeur en `.card-pole__name`, précision en `.card-pole__tagline`), puis un bloc `.ruled` pour les entreprises. Le bloc contacts n'est pas rendu tant que `hackathon.contacts` est vide.
 
 ### Barre de section (`.section-bar`)
 Filet haut 2px #231E27. H2 à gauche, info (14px muted) à droite, alignées sur la ligne de base.
@@ -140,11 +156,11 @@ Mobile-first : sur la page pôle, les boutons Email et LinkedIn sont visibles sa
 
 ## 4. Fichiers
 
-- `data.js` — Contenu : campus (dont `published`), pôles, responsables, emails, LinkedIn, photos. Seule source de contenu.
+- `data.js` — Seule source de contenu, en trois parties : `people` (répertoire des personnes, chacune décrite une seule fois sous un identifiant), `campuses` (campus avec `published`, pôles avec leur propre `published` et un `leads` d'identifiants, `team` de `{ person, role, bureau }`), `hackathon` (section de l'accueil). Toute référence de personne est résolue et validée au build.
 - `site.config.json` — URL publique du site, surchargeable par la variable d'environnement `BASE_URL`
 - `styles.css` — Tous les tokens (`:root`) et composants. **Figé.**
 - `assets/cs-network-logo.jpg` — Logo
-- `templates/index.html · campus.html · pole.html · 404.html` — Gabarits. Remplacements : `{{title}}`, `{{head}}`, `{{base}}` (préfixe des ressources), `{{home}}` (lien accueil) ; le contenu est injecté dans les éléments repérés par leur `id`.
+- `templates/index.html · campus.html · pole.html · 404.html` — Gabarits. Remplacements : `{{title}}`, `{{head}}`, `{{base}}` (préfixe des ressources), `{{home}}` (lien accueil) ; le contenu est injecté dans les éléments repérés par leur `id`. La page campus n'a qu'un conteneur `#sections` : le build y assemble un nombre variable de sections. L'accueil a un conteneur `#hackathon`.
 - `build/build.mjs` — Génère `dist/` · `render.mjs` — Fragments HTML · `data.mjs` — Chargement et validation de `data.js` · `qr.mjs` — Encodeur QR (ISO/IEC 18004, niveau H, versions 1–20) · `qrcodes.mjs` — Génère `qrcodes/` · `serve.mjs` — Serveur de prévisualisation
 - `qrcodes/` — PNG 1000 px + SVG par page publiée, versionnés
 - `.github/workflows/deploy.yml` — Build et publication sur GitHub Pages à chaque push sur `main`
@@ -157,4 +173,4 @@ Les pages utilisent des liens **relatifs à leur profondeur** (`../../styles.css
 
 `npm run build` · `npm run qr` · `npm start` (build + prévisualisation locale)
 
-À compléter dans `data.js` : les noms de famille (`[Nom]`), les emails réels, les URL LinkedIn, et le chemin des photos (`photo: 'assets/maxime.jpg'`).
+À compléter dans `data.js` : les photos (`photo: 'assets/marius.jpg'`), les responsables des pôles de Paris-Saclay, et les contacts du hackathon.

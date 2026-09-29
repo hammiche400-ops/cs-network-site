@@ -25,23 +25,55 @@ const need = (obj, key, where) => {
   return v;
 };
 
+/** Le répertoire des personnes, chacune décrite une seule fois. */
+function loadPeople(raw) {
+  const people = new Map();
+  for (const [id, p] of Object.entries(raw.people || {})) {
+    const where = `personne « ${id} »`;
+    if (!SLUG.test(id)) throw new DataError(`${where} : l'identifiant ne peut contenir que des lettres minuscules non accentuées, des chiffres et des tirets.`);
+    people.set(id, {
+      id,
+      name: need(p, 'name', where),
+      email: need(p, 'email', where),
+      linkedin: need(p, 'linkedin', where),
+      photo: p.photo || '',
+    });
+  }
+  if (people.size === 0) throw new DataError("data.js : le répertoire « people » est vide.");
+  return people;
+}
+
 /**
- * Renvoie { campuses } : la liste des campus dans l'ordre de `order`, chacun avec
- * ses pôles normalisés. Lève une erreur lisible si data.js contient une faute.
+ * Renvoie { campuses, published, hackathon } : les campus dans l'ordre de `order`,
+ * toutes les références de personnes résolues. Lève une erreur lisible si data.js
+ * contient une faute de saisie.
  */
 export function loadData(file) {
   const raw = evaluate(file);
   if (!Array.isArray(raw.order) || raw.order.length === 0)
     throw new DataError("data.js : « order » doit lister au moins un campus.");
 
-  const seen = new Set();
-  const campuses = raw.order.map(id => {
-    const where = `campus « ${id} »`;
-    if (!SLUG.test(id)) throw new DataError(`${where} : l'identifiant ne peut contenir que des lettres minuscules, des chiffres et des tirets.`);
-    if (seen.has(id)) throw new DataError(`${where} apparaît deux fois dans « order ».`);
-    seen.add(id);
+  const people = loadPeople(raw);
+  const used = new Set();
 
-    const c = raw.campuses?.[id];
+  /** Résout un identifiant de personne, ou explique comment le corriger. */
+  const person = (id, where) => {
+    if (typeof id !== 'string') throw new DataError(`${where} : attendu un identifiant de personne entre guillemets, reçu ${JSON.stringify(id)}.`);
+    const p = people.get(id);
+    if (!p) throw new DataError(`${where} : la personne « ${id} » n'existe pas dans « people ». ` +
+      `Identifiants disponibles : ${[...people.keys()].join(', ')}.`);
+    used.add(id);
+    return p;
+  };
+
+  const seen = new Set();
+  const campuses = raw.order.map(cid => {
+    const where = `campus « ${cid} »`;
+    if (!SLUG.test(cid)) throw new DataError(`${where} : l'identifiant ne peut contenir que des lettres minuscules, des chiffres et des tirets.`);
+    if (seen.has(cid)) throw new DataError(`${where} apparaît deux fois dans « order ».`);
+    seen.add(cid);
+
+    const c = raw.campuses?.[cid];
     if (!c) throw new DataError(`${where} est listé dans « order » mais absent de « campuses ».`);
     if (typeof c.published !== 'boolean')
       throw new DataError(`${where} : ajoutez « published: true » ou « published: false ».`);
@@ -52,43 +84,40 @@ export function loadData(file) {
       if (!SLUG.test(p?.id || '')) throw new DataError(`${where} : un pôle a un identifiant invalide (${JSON.stringify(p?.id)}). Lettres minuscules, chiffres et tirets uniquement.`);
       if (poleIds.has(p.id)) throw new DataError(`${where} : deux pôles portent l'identifiant « ${p.id} ».`);
       poleIds.add(p.id);
-      const leads = Array.isArray(p.leads) ? p.leads : [];
-      if (leads.length === 0) throw new DataError(`${pw} : il faut au moins un responsable dans « leads ».`);
-      leads.forEach(l => need(l, 'name', `${pw}, responsable`));
+      if (typeof p.published !== 'boolean')
+        throw new DataError(`${pw} : ajoutez « published: true » ou « published: false ».`);
+
+      const leads = (p.leads || []).map((id, i) => person(id, `${pw}, responsable n° ${i + 1}`));
+      if (p.published && leads.length === 0)
+        throw new DataError(`${pw} est publié mais n'a aucun responsable. Ajoutez un identifiant dans « leads », ou passez « published » à false.`);
+
       return {
         id: p.id,
+        published: p.published,
         name: need(p, 'name', pw),
         tagline: need(p, 'tagline', pw),
         desc: need(p, 'desc', pw),
-        email: need(p, 'email', pw),
-        linkedin: need(p, 'linkedin', pw),
-        leads: leads.map(l => ({ name: l.name, photo: l.photo || '' })),
+        leads,
       };
     });
 
-    // Un campus sans pôle peut présenter son équipe à la place.
     const team = (c.team || []).map((m, i) => {
       const mw = `${where}, membre n° ${i + 1}`;
-      return {
-        name: need(m, 'name', mw),
-        role: need(m, 'role', mw),
-        email: need(m, 'email', mw),
-        linkedin: need(m, 'linkedin', mw),
-        bureau: m.bureau === true,
-        photo: m.photo || '',
-      };
+      return { ...person(m?.person, mw), role: need(m, 'role', mw), bureau: m.bureau === true };
     });
 
-    if (c.published && poles.length === 0 && team.length === 0)
-      throw new DataError(`${where} est publié mais n'a ni pôle ni équipe. Ajoutez un pôle, ajoutez une équipe (« team »), ou passez « published » à false.`);
+    const livePoles = poles.filter(p => p.published);
+    if (c.published && livePoles.length === 0 && team.length === 0)
+      throw new DataError(`${where} est publié mais n'a ni pôle publié ni équipe. Publiez un pôle, ajoutez une équipe (« team »), ou passez « published » à false.`);
 
     return {
-      id,
+      id: cid,
       name: need(c, 'name', where),
       place: need(c, 'place', where),
       intro: need(c, 'intro', where),
       published: c.published,
-      poles,
+      poles: livePoles,          // seuls les pôles publiés sont rendus
+      allPoles: poles,
       team,
     };
   });
@@ -97,7 +126,37 @@ export function loadData(file) {
   if (orphans.length) throw new DataError(`campus absent(s) de « order » : ${orphans.join(', ')}. Ajoutez-les à la liste « order » en haut de data.js.`);
   if (!campuses.some(c => c.published)) throw new DataError("Aucun campus n'est publié : le site serait vide. Passez « published » à true pour au moins un campus.");
 
-  return { campuses, published: campuses.filter(c => c.published) };
+  const hackathon = loadHackathon(raw, person);
+  return {
+    campuses,
+    published: campuses.filter(c => c.published),
+    hackathon,
+    people,
+    unusedPeople: [...people.keys()].filter(id => !used.has(id)),
+  };
+}
+
+/** La section Hackathon de l'accueil. Absente de data.js, elle n'est simplement pas rendue. */
+function loadHackathon(raw, person) {
+  const h = raw.hackathon;
+  if (!h) return null;
+  const where = 'hackathon';
+  return {
+    title: need(h, 'title', where),
+    note: h.note || '',
+    facts: (h.facts || []).map((f, i) => ({
+      value: need(f, 'value', `${where}, fait n° ${i + 1}`),
+      label: need(f, 'label', `${where}, fait n° ${i + 1}`),
+    })),
+    companies: h.companies ? {
+      title: need(h.companies, 'title', `${where}, bloc entreprises`),
+      text: need(h.companies, 'text', `${where}, bloc entreprises`),
+    } : null,
+    contacts: (h.contacts || []).map((m, i) => {
+      const mw = `${where}, contact n° ${i + 1}`;
+      return { ...person(m?.person, mw), role: need(m, 'role', mw) };
+    }),
+  };
 }
 
 export { DataError };

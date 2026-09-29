@@ -30,42 +30,88 @@ cd ~/cs-network-site
 
 ---
 
-## 2. Modifier un responsable, un email, un pôle
+## 2. Modifier une personne, un pôle, une équipe
 
-Ouvrez **`data.js`** avec n'importe quel éditeur de texte. Vous y trouverez un bloc par pôle, qui ressemble à ceci :
+Ouvrez **`data.js`** avec n'importe quel éditeur de texte. Il contient trois parties : **`people`** (les personnes), **`campuses`** (les campus, leurs pôles et leur équipe) et **`hackathon`** (la section Hackathon de l'accueil).
+
+### Changer le nom, l'email, le LinkedIn ou la photo de quelqu'un
+
+**Une personne n'est écrite qu'une seule fois**, dans `people`, même si elle apparaît à plusieurs endroits du site :
 
 ```js
-{ id: 'conferences',
-  name: 'Conférences',
-  tagline: "Des anciens et des professionnels interviennent sur le campus toute l'année.",
-  desc: "Des anciens et des professionnels interviennent… nous nous occupons du reste.",
-  email: 'conferences.rennes@csnetwork.fr',
-  linkedin: 'https://www.linkedin.com/',
-  leads: [{ name: 'Maxime [Nom]', photo: '' }] },
+people: {
+  'marius-blanchet': { name: 'Marius Blanchet', email: 'marius.blanchet@student-cs.fr', linkedin: 'https://www.linkedin.com/in/marius-blanchet-b76481388', photo: '' },
+}
 ```
 
-| Ce que vous voulez changer | Le champ à modifier |
+Vous corrigez ici, et la correction apparaît partout : sa carte de président, sa carte de co-responsable du Podcast, les boutons de la page Podcast. **Ne cherchez pas ailleurs.**
+
+| Ce que vous voulez changer | Où |
 |---|---|
-| Le nom du responsable | `name` dans `leads` |
-| Ajouter un deuxième responsable | `leads: [{ name: 'Maxime Durand', photo: '' }, { name: 'Clara Petit', photo: '' }]` — la page passe toute seule au pluriel |
-| Mettre une photo | déposez l'image dans `assets/`, puis `photo: 'assets/maxime.jpg'` — laissez `''` pour afficher l'initiale |
-| L'adresse email du pôle | `email` |
-| Le lien LinkedIn | `linkedin` |
-| La phrase courte sur la carte du pôle | `tagline` |
-| Le texte de présentation du pôle | `desc` |
-| Le nom affiché du pôle | `name` |
+| Nom affiché, email, lien LinkedIn | le champ correspondant dans `people` |
+| Mettre une photo | déposez l'image dans `assets/`, puis `photo: 'assets/marius.jpg'` — laissez `''` pour afficher l'initiale |
+| Ajouter une personne | copiez une ligne de `people`, donnez-lui un identifiant court en minuscules sans accent (`jeanne-martin`) |
+
+Le texte à gauche des deux-points (`'marius-blanchet'`) est son **identifiant**. C'est lui qu'on écrit partout ailleurs pour la désigner. Ne le changez pas sans changer aussi tous les endroits qui l'utilisent — sinon le site refuse de se construire et vous dit lesquels.
+
+### Changer le responsable d'un pôle
+
+Dans le pôle, `leads` liste des identifiants de `people` :
+
+```js
+{ id: 'podcast', published: true, name: 'Podcast', tagline: "…", desc: "…",
+  leads: ['lili-mei-law-dune', 'marius-blanchet'] },
+```
+
+- Un seul identifiant → « Responsable ». Deux → « Co-responsables », chacun avec sa carte et ses liens.
+- **Le premier de la liste** reçoit les gros boutons Email et LinkedIn en haut de la page du pôle.
+- `tagline` est la phrase courte sur la carte, `desc` le texte de présentation.
+
+### Masquer un pôle
+
+Un pôle sans responsable ne doit pas être en ligne. Passez son `published` à `false` :
+
+```js
+{ id: 'stages', published: false, …, leads: [] },
+```
+
+Il disparaît de la page campus et du site, mais **ses données restent dans `data.js`**. Pour le remettre : ajoutez un identifiant dans `leads`, puis repassez `published` à `true`.
+
+> Attention : si un QR code de ce pôle a déjà été imprimé, il mènera à une page « Page introuvable » tant que le pôle est masqué.
+
+### Changer l'équipe d'un campus
+
+`team` liste des personnes avec leur rôle. `bureau: true` les place dans la section « Le bureau » ; sans ce champ, elles vont dans « Les membres ».
+
+```js
+team: [
+  { person: 'marius-blanchet', role: 'Président', bureau: true },
+  { person: 'adrien-cunha',    role: 'Membre' },
+],
+```
+
+La section « Les responsables de pôle » **ne se saisit pas** : elle se déduit toute seule des pôles. Vous n'avez rien à tenir à jour en double.
+
+### La section Hackathon de l'accueil
+
+Tout est dans l'objet `hackathon` : le titre, la date affichée à droite (`note`), les quatre cartes (`facts`, avec `value` en gros et `label` en dessous), le bloc `companies`, et `contacts`.
+
+`contacts` est vide pour l'instant, donc le bloc n'apparaît pas du tout sur la page. Pour l'afficher, ajoutez des personnes au même format que `team` :
+
+```js
+contacts: [{ person: 'aziz-hammiche', role: 'Contact entreprises' }],
+```
 
 ### Trois règles à respecter
 
 1. **Gardez les guillemets** autour des textes, et la **virgule** à la fin de chaque ligne.
    Si un texte contient une apostrophe (`l'année`), entourez-le de guillemets doubles `"…"`.
-2. **Ne changez jamais un `id`** (`id: 'conferences'`) : c'est lui qui forme l'adresse de la page
-   (`/rennes/conferences/`). Le modifier casserait tous les QR codes déjà imprimés.
+2. **Ne changez jamais l'`id` d'un campus ou d'un pôle** (`id: 'conferences'`) : il forme l'adresse de la page (`/rennes/conferences/`). Le modifier casserait les QR codes déjà imprimés.
 3. **Ne touchez pas à `styles.css`** : c'est le design, il est figé.
 
 ### Ajouter un pôle
 
-Copiez un bloc de pôle existant, collez-le juste après, et changez `id`, `name`, `tagline`, `desc`, `email` et `leads`.
+Copiez un bloc de pôle existant, collez-le juste après, et changez `id`, `name`, `tagline`, `desc` et `leads`.
 Donnez-lui un `id` court, en minuscules, sans accent ni espace (`mentorat`, `forum-entreprises`).
 
 ---
@@ -76,15 +122,17 @@ Chaque campus a un interrupteur, en haut de son bloc dans `data.js` :
 
 ```js
 rennes: { name: 'Rennes', published: true,  … }
-metz:   { name: 'Metz',   published: false, … }
+gif:    { name: 'Paris-Saclay', published: false, … }
 ```
 
-- `published: true` → le campus est **en ligne** : il a ses pages, il apparaît dans le menu, il a ses QR codes.
-- `published: false` → le campus est **masqué**. Il apparaît seulement sur l'accueil sous la mention « Bientôt », sur une carte non cliquable. Aucune page n'est générée, aucun QR code non plus.
+- `published: true` → le campus est **en ligne** : il a ses pages, il apparaît dans le menu, il peut avoir ses QR codes.
+- `published: false` → le campus est **masqué**. Il apparaît seulement sur l'accueil sous la mention « Bientôt », sur une carte non cliquable. Aucune page n'est générée.
 
-Aujourd'hui, seul **Rennes** est publié. Metz et Paris-Saclay contiennent encore des données d'exemple.
+Aujourd'hui, **Rennes** et **Metz** sont publiés. Paris-Saclay ne l'est pas : ses pôles sont décrits mais n'ont pas encore de responsable.
 
-**Pour publier Metz** : passez son `published` à `true`, vérifiez que ses pôles et ses responsables sont les bons, puis suivez les étapes 4, 5 et 6.
+**Pour publier Paris-Saclay** : renseignez les responsables de ses pôles (voir plus haut), publiez au moins un pôle ou ajoutez une `team`, passez le campus en `published: true`, puis suivez les étapes 4, 5 et 6.
+
+> Un campus peut n'avoir aucun pôle : sa page affiche alors seulement son équipe, comme Metz aujourd'hui.
 
 ---
 
@@ -167,6 +215,9 @@ Quand une commande échoue, le Terminal affiche un message en français qui dit 
 | « ajoutez « published: true » ou « published: false » » | Un campus a été ajouté sans son interrupteur de publication. |
 | « deux pôles portent l'identifiant … » | Vous avez copié un pôle sans changer son `id`. |
 | « campus absent(s) de « order » » | Un campus a été ajouté à `campuses` mais pas à la liste `order`, en haut du fichier. |
+| « la personne « … » n'existe pas dans « people » » | Un identifiant est mal orthographié. Le message liste ceux qui existent : recopiez-en un. |
+| « est publié mais n'a aucun responsable » | Un pôle publié a un `leads` vide. Ajoutez un identifiant, ou passez le pôle en `published: false`. |
+| « Personnes définies dans « people » mais référencées nulle part » | Simple avertissement, pas une erreur : quelqu'un est décrit mais n'apparaît sur aucune page. |
 
 Tant que le message d'erreur s'affiche, **le site en ligne n'est pas modifié** : il reste tel qu'il était. Vous ne pouvez rien casser en ligne depuis votre ordinateur.
 
